@@ -1,0 +1,21 @@
+<html>
+    <head>
+        <script src="oxygen.js" ></script>
+    </head>
+    <body>
+        <div o-for="ar">
+            <p o-text="name +' ' + $base.n"></p>
+            <a href="#" o-click="$base.removePerson"><b>Remove</b></a>
+        </div>
+        <h1 o-text="text">hello</h1>
+        <h1 o-text="n">hello</h1>
+        <div>
+            <p >gg</p>
+        </div>
+        <button o-click="function(d,e){fn(text)}">Кнопка с текстом</button>
+        <div o-for="ar">
+            <p o-text="name"></p>
+        </div>
+        <script src="viewModel.js" ></script>
+    </body>
+</html>
