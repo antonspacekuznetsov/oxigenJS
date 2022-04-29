@@ -6,7 +6,6 @@ var ox = (
         let elements = [];
         let indexes = [];
         let isInitMode = true;
-        let countOperation = 0;
         let helper = {
             scanHTML: function(element, fn, inOrder = false){
                 if(typeof fn !== 'function'){
@@ -16,7 +15,12 @@ var ox = (
                 while(arr.length){
                     let item = arr.pop();
                     for(let i = item.i; i < item.el.childElementCount; i++){
-                        fn(item.el.children[i]);
+                        try{
+                            fn(item.el.children[i]);
+                        }
+                        catch(ex){
+                            continue;
+                        }
                         if(item.el.children[i].childElementCount > 0){
                             if(inOrder && item.el.childElementCount - (i+1) !== 0){
                                 arr.push({el:item.el, i:i+1});
@@ -28,16 +32,15 @@ var ox = (
                     }
                 }
             },
-            scanBinder: function(el){
+            scanBinder: function(el, cntx = context){
                 let item = el;
                 for (let j = 0; j < item.attributes.length; j++){
                     for (let l = 0; l < listBindings.length; l++){
                         if(item.attributes[j].name === listBindings[l].binder){
-                            with(context){result = eval("(" + item.attributes[j].value + ")");};
-                            countOperation++;
-                            listBindings[l].fn(item, result);  
+                            with(cntx){result = eval("(" + item.attributes[j].value + ")");};
                             elements.push({element:item, binding:item.attributes[j].name, listIndexes:indexes, expression:item.attributes[j].value});  
-                            indexes = [];                              
+                            indexes = [];     
+                            listBindings[l].fn(item, result);                           
                         }
                     }
                 }
@@ -50,19 +53,17 @@ var ox = (
                 if(!Array.isArray(value)){
                     throw new Error('Value must be an array!');
                 }
-                helper.scanHTML(el, function(el) {console.log(el);})
-
-                let innerHTML = el.innerHTML;
-                context = {$base:virtualViewModel, $operationNumber:countOperation, get $data(){return value[countOperation - this.$operationNumber]}, get $index(){return countOperation - this.$operationNumber}}
-                
+                let localContext = {$base:virtualViewModel, $index:0, get $data(){return value[this.$index]}}
+                let virtualEl = el.cloneNode(true);
+                el.innerHTML = "";
                 for(let i = 0 ; i < value.length; i++){
                     if(typeof value[i] === 'object'){
                         let keys = Object.keys(value[i]);
                         for (let j = 0 ; j < keys.length; j++){
-                            if(context[keys[j]] === undefined){
-                                Object.defineProperty(context, keys[j].toString(), {
+                            if(localContext[keys[j]] === undefined){
+                                Object.defineProperty(localContext, keys[j].toString(), {
                                     get: function() {
-                                    return context.$data[keys[j]];
+                                    return localContext.$data[keys[j]];
                                     }
                                 });
                             }
@@ -70,9 +71,15 @@ var ox = (
                     }
                 }
 
-                for(let i = 0; i < value.length - 1; i++){
-                    el.innerHTML+= innerHTML;
+                for(let i = 0; i < value.length; i++){
+                    localContext.$index = i;
+                    helper.scanHTML(virtualEl, function(oneEl) {
+                        let newElement = oneEl.cloneNode(true);
+                        helper.scanBinder(newElement, localContext); 
+                        el.append(elements[elements.length - 1].element);
+                    });
                 }
+                throw new Error('Break current iteration.');
             }}
     
         ];
@@ -83,7 +90,7 @@ var ox = (
                         virtualViewModel[keys[i]] = viewModel[keys[i]];
                     }
 
-                    let root = document.getElementsByTagName(element);
+                    let root = document.getElementsByTagName(element)[0];
                     
                     for (let i = 0; i < keys.length; i++)
                     {
@@ -98,7 +105,8 @@ var ox = (
                             }
                         }
                     }
-                    this.scanHTML(root[0]);
+                    helper.scanHTML(root, function(root) {helper.scanBinder(root, virtualViewModel)});
+                    //this.scanHTML(root[0]);
                     isInitMode = false;
 
             },
@@ -110,7 +118,6 @@ var ox = (
                             for (let l = 0; l < listBindings.length; l++){
                                 if(item.attributes[j].name === listBindings[l].binder){
                                     with(context){result = eval("(" + item.attributes[j].value + ")");};
-                                    countOperation++;
                                     listBindings[l].fn(item, result);  
                                     elements.push({element:item, binding:item.attributes[j].name, listIndexes:indexes, expression:item.attributes[j].value});  
                                     indexes = [];                              
