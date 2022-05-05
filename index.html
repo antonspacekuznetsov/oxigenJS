@@ -4,17 +4,18 @@
     </head>
     <body>
         <div o-for="ar">
-            <p o-text="$data.name + ' ' + $base.text"></p>
+            <p o-text="$data.name + ' ' + $base.text + ' ' + $index"></p>
             <a href="#" o-click="$base.removePerson">Remove</a>
         </div>
         <h1 o-text="text">hello</h1>
         <h1 o-text="n">hello</h1>
+        
         <div>
             <p >gg</p>
         </div>
         <button o-click="function(d,e){fn(text)}">Кнопка с текстом</button>
         <div o-for="ar">
-            <p o-text="name"></p>
+            <p o-text="name + ' ' + $base.text + ' ' + $index"></p>
         </div>
         <script src="viewModel.js" ></script>
     </body>

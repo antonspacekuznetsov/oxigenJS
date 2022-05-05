@@ -2,7 +2,6 @@ var ox = (
     function(){
         let listUpdaters = [];
         let virtualViewModel = {};
-        let context = virtualViewModel;
         let elements = [];
         let indexes = [];
         let isInitMode = true;
@@ -38,7 +37,7 @@ var ox = (
                     for (let l = 0; l < listBindings.length; l++){
                         if(item.attributes[j].name === listBindings[l].binder){
                             with(cntx){result = eval("(" + item.attributes[j].value + ")");};
-                            elements.push({element:item, binding:item.attributes[j].name, listIndexes:indexes, expression:item.attributes[j].value});  
+                            elements.push({element:item, binding:item.attributes[j].name, listIndexes:indexes, expression:item.attributes[j].value, context:cntx, index:cntx.$index});  
                             indexes = [];     
                             listBindings[l].fn(item, result);                           
                         }
@@ -89,6 +88,7 @@ var ox = (
                     for (let i = 0; i < keys.length; i++){
                         virtualViewModel[keys[i]] = viewModel[keys[i]];
                     }
+                    virtualViewModel.$index = null;
 
                     let root = document.getElementsByTagName(element)[0];
                     
@@ -110,29 +110,6 @@ var ox = (
                     isInitMode = false;
 
             },
-            scanHTML: function(el){
-                for (let i = 0; i < el.childElementCount; i++){
-                    item = el.children[i];
-                    if(item.attributes.length !== 0){
-                        for (let j = 0; j < item.attributes.length; j++){
-                            for (let l = 0; l < listBindings.length; l++){
-                                if(item.attributes[j].name === listBindings[l].binder){
-                                    with(context){result = eval("(" + item.attributes[j].value + ")");};
-                                    listBindings[l].fn(item, result);  
-                                    elements.push({element:item, binding:item.attributes[j].name, listIndexes:indexes, expression:item.attributes[j].value});  
-                                    indexes = [];                              
-                                }
-                            }
-                        }
-                    }
-            
-                    if (item.childElementCount > 0){
-                        this.scanHTML(item);
-                    }   
-                      
-                }
-                context = virtualViewModel; 
-            },
 
             updateAble: function(value = null){
                 let index;
@@ -150,7 +127,10 @@ var ox = (
                                 if(elements[i].listIndexes[j] === index){
                                     for(let b = 0; b < listBindings.length; b++){
                                         if(listBindings[b].binder === elements[i].binding){
-                                            with(virtualViewModel){result = eval(elements[i].expression)};
+                                            if(elements[i].index !== null){
+                                                elements[i].context.$index = elements[i].index;
+                                            }
+                                            with(elements[i].context){result = eval("(" + elements[i].expression + ")")};
                                             listBindings[b].fn(elements[i].element, result);  
                                             break;
                                         }
