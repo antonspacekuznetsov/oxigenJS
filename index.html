@@ -4,8 +4,15 @@
     </head>
     <body>
         <div o-for="ar">
+            <div>
             <p o-text="$data.name + ' ' + $base.text + ' ' + $index"></p>
             <a href="#" o-click="$base.removePerson">Remove</a>
+            </div>
+            <div>
+                <div>
+                <p o-text="$data.name + ' ' + $base.text + ' ' + $index"></p>
+                </div>
+            </div>
         </div>
         <h1 o-text="text">hello</h1>
         <h1 o-text="n">hello</h1>

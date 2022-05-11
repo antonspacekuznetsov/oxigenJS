@@ -18,7 +18,13 @@ var ox = (
                             fn(item.el.children[i]);
                         }
                         catch(ex){
-                            continue;
+                            if(ex.message === 'BCI')
+                            {
+                                continue;
+                            }
+                            else{
+                                throw ex;
+                            }
                         }
                         if(item.el.children[i].childElementCount > 0){
                             if(inOrder && item.el.childElementCount - (i+1) !== 0){
@@ -70,15 +76,37 @@ var ox = (
                     }
                 }
 
+                let arr = [{el:el, count:virtualEl.childElementCount}];
+                let fn =function(oneEl) {
+                    let newElement = oneEl.cloneNode(true);
+                    helper.scanBinder(newElement, localContext); 
+
+                        if(newElement.childElementCount > 0){
+                            let cloneEl = newElement.cloneNode(true);
+                            cloneEl.innerHTML = "";
+                            arr.push({el:cloneEl, count:newElement.childElementCount});
+                            return;
+                        }
+
+                        arr[arr.length - 1].el.append(newElement);
+
+                        while(true){
+                            if(--arr[arr.length - 1].count === 0 && arr.length !== 1 ){
+                                let curEl = arr.pop();
+                                arr[arr.length - 1].el.append(curEl.el);
+                            }
+                            else{
+                                break;
+                            }
+                        }  
+                                                
+                };
+
                 for(let i = 0; i < value.length; i++){
                     localContext.$index = i;
-                    helper.scanHTML(virtualEl, function(oneEl) {
-                        let newElement = oneEl.cloneNode(true);
-                        helper.scanBinder(newElement, localContext); 
-                        el.append(elements[elements.length - 1].element);
-                    });
+                    helper.scanHTML(virtualEl, fn, true);
                 }
-                throw new Error('Break current iteration.');
+                throw new Error('BCI');
             }}
     
         ];
