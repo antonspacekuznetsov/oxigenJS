@@ -3,15 +3,10 @@
         <script src="oxygen.js" ></script>
     </head>
     <body>
-        <div o-for="ar">
+        <div o-for="[{name:'Anton', surname:'Kuznetsov'}, {name:'Lena'}]">
             <div>
             <p o-text="$data.name + ' ' + $base.text + ' ' + $index"></p>
             <a href="#" o-click="$base.removePerson">Remove</a>
-            </div>
-            <div>
-                <div>
-                <p o-text="$data.name + ' ' + $base.text + ' ' + $index"></p>
-                </div>
             </div>
         </div>
         <h1 o-text="text">hello</h1>
@@ -24,6 +19,7 @@
         <div o-for="ar">
             <p o-text="name + ' ' + $base.text + ' ' + $index"></p>
         </div>
+        <p o-if="gg">fdfd</p>
         <script src="viewModel.js" ></script>
     </body>
 </html>

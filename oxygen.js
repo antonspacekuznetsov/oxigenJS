@@ -107,10 +107,38 @@ var ox = (
                     helper.scanHTML(virtualEl, fn, true);
                 }
                 throw new Error('BCI');
+            }},
+            {binder:'o-if', fn:function(el, value){
+                if(!value){
+                    el.remove();
+                }
             }}
     
         ];
-        return {
+
+        let extendedMethods = {
+            watch: function(fn){
+                if(typeof fn !== 'function'){
+                    throw new Error('Fn parameter must be an function!');  
+                }
+                for(let i = 0; i < listUpdaters.length; i++){
+                    if(listUpdaters[i].fnLink === this){
+                        listUpdaters[i].callback = fn;
+                        break;
+                    }
+                }
+            },
+            unwatch: function(){
+                for(let i = 0; i < listUpdaters.length; i++){
+                    if(listUpdaters[i].fnLink === this){
+                        listUpdaters[i].callback = null;
+                        break;
+                    }
+                }
+            }
+        }
+
+        let ox = {
             start: function(viewModel, element = 'body'){
                     let keys = Object.keys(viewModel);
                     for (let i = 0; i < keys.length; i++){
@@ -134,9 +162,14 @@ var ox = (
                         }
                     }
                     helper.scanHTML(root, function(root) {helper.scanBinder(root, virtualViewModel)});
-                    //this.scanHTML(root[0]);
                     isInitMode = false;
 
+            },
+
+            removeAllWatch: function(){
+                for(let i = 0; i < listUpdaters.length; i++){
+                    listUpdaters[i].callback = null;
+                }
             },
 
             updateAble: function(value = null){
@@ -148,6 +181,10 @@ var ox = (
                     }
         
                     listUpdaters[index].value = value;
+
+                    if(listUpdaters[index].callback !== null){
+                        listUpdaters[index].callback(value);
+                    }
 
                     if(!isInitMode){
                         for(let i = 0; i < elements.length; i++){
@@ -169,11 +206,13 @@ var ox = (
                         }
                     }
                 }  
-                index = listUpdaters.push({value: value, fnLink: fn}) - 1;  
+                index = listUpdaters.push({value: value, fnLink: fn, callback:null}) - 1;  
+                Object.setPrototypeOf(fn, extendedMethods);
                 return fn;
             }
                        
         }
+        return ox;
     }
 )()
 
