@@ -209,6 +209,18 @@ var ox = (
                 index = listUpdaters.push({value: value, fnLink: fn, callback:null}) - 1;  
                 Object.setPrototypeOf(fn, extendedMethods);
                 return fn;
+            },
+
+            isUpdatAble: function(fn){
+                if(typeof fn !== 'function'){
+                    throw new Error('Fn parameter must be an function!');  
+                }
+                for(let i = 0; i < listUpdaters.length; i++){
+                    if(listUpdaters[i].fnLink === fn){
+                        return true;
+                    }
+                }
+                return false;
             }
                        
         }
