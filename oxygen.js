@@ -37,6 +37,7 @@ var ox = (
                     }
                 }
             },
+            
             scanBinder: function(el, cntx = context){
                 let item = el;
                 for (let j = 0; j < item.attributes.length; j++){
@@ -49,7 +50,33 @@ var ox = (
                         }
                     }
                 }
+            },
+
+            findElement: function(el){
+                for(let i = 0; i < elements.length; i++){
+                    if(el === elements[i].element){
+                        return elements[i];
+                    }
+                }
+            },
+
+            findElementDESC: function(el){
+                for(let i = elements.length - 1; i > -1; i--){
+                    if(el === elements[i].element){
+                        return elements[i];
+                    }
+                }
+            },
+            
+            isExistElement: function(el){
+                for(let i = 0;  i < elements.length; i++ ){
+                    if(elements[i].element === el){
+                        return true;
+                    }
+                }
+                return false;
             }
+
         };
         let listBindings = [
             {binder:'o-text', fn:function(el, value){ el.innerText=value;}},
@@ -109,8 +136,20 @@ var ox = (
                 throw new Error('BCI');
             }},
             {binder:'o-if', fn:function(el, value){
+                let _el = helper.findElementDESC(el);
                 if(!value){
-                    el.remove();
+                    _el.saveInnerHTML = _el.element.innerHTML;
+                    el.innerHTML = "";
+                }
+                else{
+
+                    el.innerHTML = _el.saveInnerHTML;
+                    helper.scanHTML(el, function(el){
+                        if(!helper.isExistElement(el)){
+                            helper.scanBinder(el);
+                        }
+                    });
+                    _el.saveInnerHTML = null;
                 }
             }}
     
