@@ -219,20 +219,59 @@ var ox = (
 
             }},
             {binder:'o-if', calc:true, fn:function(el, value){
-                let _el = helper.findElementDESC(el);
-                if(!value){
-                    _el.saveInnerHTML = _el.element.innerHTML;
-                    el.innerHTML = "";
+                if(typeof value !== 'boolean'){
+                    throw new Error('o-if The value must be boolean');   
                 }
-                else{
 
-                    el.innerHTML = _el.saveInnerHTML;
-                    helper.scanHTML(el, function(el){
-                        if(!helper.isExistElement(el)){
-                            helper.scanBinderMX(el);
-                        }
-                    });
-                    _el.saveInnerHTML = null;
+                let _el = helper.findElementDESC(el);
+
+                if(_el === undefined){
+                    if(!value)
+                    {
+                        el.innerHTML = "";
+                    }
+                    return;
+                }
+                
+                if(!value){
+                    if(el.childElementCount === 0)
+                    {
+                        return;
+                    }
+
+                    if(_el.innerElements === undefined)
+                    {
+                        _el.innerElements = {listElements:[], isInit:false};
+                    }
+
+                    for(let i = 0; i < el.childElementCount; i++)
+                    {
+                        _el.innerElements.listElements.push(el.children[i]);
+                    }
+
+                    el.innerHTML = null;
+                }
+                else
+                {
+                    if(_el.innerElements === undefined)
+                    {
+                        return;
+                    }
+                    
+                    let len = _el.innerElements.listElements.length;
+                    for(let i = 0; i < len; i++)
+                    {
+                        el.append(_el.innerElements.listElements.shift());
+                    }
+                    
+                    if(!_el.innerElements.isInit)
+                    {
+                        helper.scanHTML(el, function(el) {
+                            helper.scanBinderMX.call(virtualViewModel, el, true);
+                            throw new Error('BCI');
+                        });
+                        _el.innerElements.isInit = true;
+                    }
                 }
             }}
     
