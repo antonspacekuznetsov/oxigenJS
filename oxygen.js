@@ -100,6 +100,7 @@ var ox = (
         };
         let listBindings = [
             {binder:'o-text', calc:true, fn:function(el, value){ el.innerText=value;}},
+            {binder:'o-html', calc:true, fn:function(el,value){el.innerHTML=value;}},
             {binder:'o-click', calc:true, fn:function(el, value){
                 if(typeof value !== 'function'){
                     throw new Error('o-click value must be an function!');  
@@ -160,9 +161,9 @@ var ox = (
                 let arr = [{el:el, count:virtualEl.childElementCount}];
 
                 let callback = function(oneEl) {
+                    
+                    helper.scanBinderMX.call(localContext, oneEl); 
                     let newElement = oneEl.cloneNode(true);
-                    helper.scanBinderMX.call(localContext, newElement); 
-
                         if(newElement.childElementCount > 0){
                             let cloneEl = newElement.cloneNode(true);
                             cloneEl.innerHTML = "";
@@ -267,7 +268,7 @@ var ox = (
                     if(!_el.innerElements.isInit)
                     {
                         helper.scanHTML(el, function(el) {
-                            helper.scanBinderMX.call(virtualViewModel, el, true);
+                            helper.scanBinderMX.call(virtualViewModel, el);
                             throw new Error('BCI');
                         });
                         _el.innerElements.isInit = true;
