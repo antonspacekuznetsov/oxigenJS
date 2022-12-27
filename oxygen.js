@@ -11,13 +11,22 @@ var ox = (
                     throw new Error('Fn parameter must be an function!');    
                 }
                 let arr = [{el:element, i:0}];
-                while(arr.length){
+
+                while(arr.length)
+                {
                     let item = arr.pop();
-                    for(let i = item.i; i < item.el.childElementCount; i++){
-                        try{
-                            callback(item.el.children[i]);
+                    //let listCommentElements = this.scanNodes(item.el);
+
+                    for(let i = item.i; i < item.el.childElementCount; i++)
+                    {
+                        let element = item.el.children[i];
+
+                        try
+                        {
+                            callback(element);
                         }
-                        catch(ex){
+                        catch(ex)
+                        {
                             if(ex.message === 'BCI')
                             {
                                 continue;
@@ -26,18 +35,104 @@ var ox = (
                                 throw ex;
                             }
                         }
-                        if(item.el.children[i].childElementCount > 0){
+                        if(element.childElementCount > 0){
                             if(inOrder && item.el.childElementCount - (i+1) !== 0){
                                 arr.push({el:item.el, i:i+1});
-                                arr.push({el:item.el.children[i], i:0});
+                                arr.push({el:element, i:0});
                                 break;
                             }
-                            arr.push({el:item.el.children[i], i:0});
+                            arr.push({el:element, i:0});
                         }
                     }
                 }
             },
+
+            scanNodes: function(element)
+            {
+               let arr = [];
+               let pointer = -1;
+
+               for(let i = 0; i < element.childNodes.length; i++)
+               {
+                    let node = element.childNodes[i];
+                    if(this.isStartComment(node))
+                    {
+                        let text = this.getCommentText(node);
+                        arr.push({listElements:[node], attributes:[{name:text[2], value:text[3]}]});
+                        pointer = arr.length - 1;
+                        continue;
+                    }
+
+                    if(this.isCloseComment(node))
+                    {
+                        arr[pointer].listElements.push(node);
+                        pointer--;
+                        continue;
+                    }
+
+                    if(this.isElement(node) && pointer >= 0)
+                    {
+                        arr[pointer].listElements.push(node);
+                    }
+               }
+
+               if(pointer >= 0)
+               {
+                    //console.log(arr[pointer].startComment);
+                    throw new Error('Close comment not found!');
+               }
+
+               return arr;
+            },
             
+            getCommentText: function(node)
+            {
+                let str = node.nodeValue.replace(/\s/g, '');
+                str = str.toLowerCase();
+                return str.match(/(^ox)(o-if|o-for)\:(\w+)$/i);
+            },
+
+            isElement: function(node)
+            {
+                if(node.children !== undefined && node.childElementCount !== undefined)
+                {
+                    return true;
+                }
+                return false;
+            },
+
+            isStartComment: function(node)
+            {
+                if(node.children === undefined && node.childElementCount === undefined)
+                {
+                    if(node.nodeValue !== undefined && node.nodeName === '#comment')
+                    {
+                        let str = node.nodeValue.replace(/\s/g, '');
+                        str = str.toLowerCase();
+                        if(/(^ox)(o-if|o-for)\:\w+$/i.test(str)){
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            },
+
+            isCloseComment: function(node)
+            {
+                if(node.children === undefined && node.childElementCount === undefined)
+                {
+                    if(node.nodeValue !== undefined && node.nodeName === '#comment')
+                    {
+                        let str = node.nodeValue.replace(/\s/g, '');
+                        str = str.toLowerCase();
+                        if(/^\/ox$/i.test(str)){
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            },
+
             scanBinderMX: function(el){
                 let item = el;
                 for (let j = 0; j < item.attributes.length; j++){
@@ -326,7 +421,10 @@ var ox = (
                             }
                         }
                     }
-                    helper.scanHTML(root, function(root) {helper.scanBinderMX.call(virtualViewModel, root)});
+                    helper.scanHTML(root, function(element) 
+                    {
+                        helper.scanBinderMX.call(virtualViewModel, element);
+                    });
                     isInitMode = false;
 
             },
