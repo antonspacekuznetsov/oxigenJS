@@ -15,11 +15,27 @@ var ox = (
                 while(arr.length)
                 {
                     let item = arr.pop();
-                    //let listCommentElements = this.scanNodes(item.el);
 
-                    for(let i = item.i; i < item.el.childElementCount; i++)
+                    for(let i = item.i; i < item.el.childNodes.length; i++)
                     {
-                        let element = item.el.children[i];
+                        let node = item.el.childNodes[i];
+                        let element = null;
+
+                        if(this.isStartComment(node))
+                        {
+                            let text = this.getCommentText(node);
+                            element = node;
+                            element.attributes = [{name:text[2], value:text[3]}];
+                        }
+
+                        if(!this.isElement(node) && !this.isStartComment(node))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            element = node;
+                        }
 
                         try
                         {
@@ -46,50 +62,53 @@ var ox = (
                     }
                 }
             },
-
-            scanNodes: function(element)
-            {
-               let arr = [];
-               let pointer = -1;
-
-               for(let i = 0; i < element.childNodes.length; i++)
-               {
-                    let node = element.childNodes[i];
-                    if(this.isStartComment(node))
-                    {
-                        let text = this.getCommentText(node);
-                        arr.push({listElements:[node], attributes:[{name:text[2], value:text[3]}]});
-                        pointer = arr.length - 1;
-                        continue;
-                    }
-
-                    if(this.isCloseComment(node))
-                    {
-                        arr[pointer].listElements.push(node);
-                        pointer--;
-                        continue;
-                    }
-
-                    if(this.isElement(node) && pointer >= 0)
-                    {
-                        arr[pointer].listElements.push(node);
-                    }
-               }
-
-               if(pointer >= 0)
-               {
-                    //console.log(arr[pointer].startComment);
-                    throw new Error('Close comment not found!');
-               }
-
-               return arr;
-            },
             
+            checkComment: function(comment)
+            {
+                if(!this.isStartComment(comment))
+                {
+                    console.log(comment);
+                    throw Error('This comment is not start comment oxigen js.');
+                }
+
+                let commnetCount = 0;
+
+                while(comment){
+
+                    if(comment === null)
+                    {
+                        break;
+                    }
+                    if(this.isStartComment(comment))
+                    {
+                        commnetCount++;
+                    }
+
+                    if(this.isCloseComment(comment))
+                    {
+                        commnetCount--;
+                    }
+
+                    if(commnetCount === 0)
+                    {
+                        return comment;
+                    }
+
+                    comment = comment.nextSibling;
+                }
+
+                if(commnetCount !== 0)
+                {
+                    throw Error('One or couple comments have not close or start comment!');
+                }
+
+            },
+
             getCommentText: function(node)
             {
                 let str = node.nodeValue.replace(/\s/g, '');
                 str = str.toLowerCase();
-                return str.match(/(^ox)(o-if|o-for)\:(\w+)$/i);
+                return str.match(/(^ox)(if|for)\:(\w+)$/i);
             },
 
             isElement: function(node)
@@ -109,7 +128,7 @@ var ox = (
                     {
                         let str = node.nodeValue.replace(/\s/g, '');
                         str = str.toLowerCase();
-                        if(/(^ox)(o-if|o-for)\:\w+$/i.test(str)){
+                        if(/(^ox)(if|for)\:\w+$/i.test(str)){
                             return true;
                         }
                     }
@@ -314,7 +333,8 @@ var ox = (
                 }
 
             }},
-            {binder:'o-if', calc:true, fn:function(el, value){
+            {binder:'o-if', calc:true, fn:function(el, value)
+            {
                 if(typeof value !== 'boolean'){
                     throw new Error('o-if The value must be boolean');   
                 }
@@ -363,6 +383,79 @@ var ox = (
                     if(!_el.innerElements.isInit)
                     {
                         helper.scanHTML(el, function(el) {
+                            helper.scanBinderMX.call(virtualViewModel, el);
+                            throw new Error('BCI');
+                        });
+                        _el.innerElements.isInit = true;
+                    }
+                }
+            }
+            },
+            {binder:'if', calc:true, fn:function(el, value){
+                if(typeof value !== 'boolean'){
+                    throw new Error('o-if The value must be boolean');   
+                }
+
+                let _el = helper.findElementDESC(el);
+                let closeComment = helper.checkComment(el);
+
+                if(_el === undefined){
+                    if(!value)
+                    {
+                        while(el.nextSibling)
+                        {
+                            if(el.nextSibling === closeComment)
+                            {
+                                break;
+                            }
+                            el.nextSibling.remove();
+                        }
+                    }
+                    return;
+                }
+                
+                if(!value){
+                    if(el.childElementCount === 0)
+                    {
+                        return;
+                    }
+
+                    if(_el.innerElements === undefined)
+                    {
+                        _el.innerElements = {listElements:[], isInit:false};
+                    }
+                    
+                    while(el.nextSibling)
+                    {
+                        if(el.nextSibling === closeComment)
+                        {
+                            break;
+                        }
+                        _el.innerElements.listElements.push(el.nextSibling);
+                        el.nextSibling.remove();
+                    }
+
+                }
+                else
+                {
+                    if(_el.innerElements === undefined)
+                    {
+                        return;
+                    }
+                    
+                    let len = _el.innerElements.listElements.length;
+                    let virtualElement = {childNodes:[]};
+
+                    for(let i = 0; i < len; i++)
+                    {
+                        let node = _el.innerElements.listElements.shift();
+                        el.parentElement.insertBefore(node, closeComment);
+                        virtualElement.childNodes.push(node);
+                    }
+                    
+                    if(!_el.innerElements.isInit)
+                    {
+                        helper.scanHTML(virtualElement, function(el) {
                             helper.scanBinderMX.call(virtualViewModel, el);
                             throw new Error('BCI');
                         });
