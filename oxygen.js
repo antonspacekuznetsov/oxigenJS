@@ -108,7 +108,7 @@ var ox = (
             {
                 let str = node.nodeValue.replace(/\s/g, '');
                 str = str.toLowerCase();
-                return str.match(/(^ox)(if|for)\:(\w+)$/i);
+                return str.match(/(^ox)(o-if|for)\:(\w+)$/i);
             },
 
             isElement: function(node)
@@ -128,7 +128,7 @@ var ox = (
                     {
                         let str = node.nodeValue.replace(/\s/g, '');
                         str = str.toLowerCase();
-                        if(/(^ox)(if|for)\:\w+$/i.test(str)){
+                        if(/(^ox)(o-if|for)\:\w+$/i.test(str)){
                             return true;
                         }
                     }
@@ -333,82 +333,25 @@ var ox = (
                 }
 
             }},
-            {binder:'o-if', calc:true, fn:function(el, value)
-            {
+            {binder:'o-if', calc:true, fn:function(el, value){
                 if(typeof value !== 'boolean'){
                     throw new Error('o-if The value must be boolean');   
-                }
-
-                let _el = helper.findElementDESC(el);
-
-                if(_el === undefined){
-                    if(!value)
-                    {
-                        el.innerHTML = "";
-                    }
-                    return;
                 }
                 
-                if(!value){
-                    if(el.childElementCount === 0)
-                    {
-                        return;
-                    }
-
-                    if(_el.innerElements === undefined)
-                    {
-                        _el.innerElements = {listElements:[], isInit:false};
-                    }
-
-                    for(let i = 0; i < el.childElementCount; i++)
-                    {
-                        _el.innerElements.listElements.push(el.children[i]);
-                    }
-
-                    el.innerHTML = null;
-                }
-                else
-                {
-                    if(_el.innerElements === undefined)
-                    {
-                        return;
-                    }
-                    
-                    let len = _el.innerElements.listElements.length;
-                    for(let i = 0; i < len; i++)
-                    {
-                        el.append(_el.innerElements.listElements.shift());
-                    }
-                    
-                    if(!_el.innerElements.isInit)
-                    {
-                        helper.scanHTML(el, function(el) {
-                            helper.scanBinderMX.call(virtualViewModel, el);
-                            throw new Error('BCI');
-                        });
-                        _el.innerElements.isInit = true;
-                    }
-                }
-            }
-            },
-            {binder:'if', calc:true, fn:function(el, value){
-                if(typeof value !== 'boolean'){
-                    throw new Error('o-if The value must be boolean');   
-                }
-
                 let _el = helper.findElementDESC(el);
-                let closeComment = helper.checkComment(el);
+                let end = helper.isElement(el) ? null : helper.checkComment(el);
+                let localEl = end === null ? el.childNodes[0] : el;
 
                 if(_el === undefined){
                     if(!value)
                     {
-                        while(el.nextSibling)
+                        while(localEl.nextSibling)
                         {
-                            if(el.nextSibling === closeComment)
+                            if(localEl.nextSibling === end)
                             {
                                 break;
                             }
-                            el.nextSibling.remove();
+                            localEl.nextSibling.remove();
                         }
                     }
                     return;
@@ -425,14 +368,14 @@ var ox = (
                         _el.innerElements = {listElements:[], isInit:false};
                     }
                     
-                    while(el.nextSibling)
+                    while(localEl.nextSibling)
                     {
-                        if(el.nextSibling === closeComment)
+                        if(localEl.nextSibling === end)
                         {
                             break;
                         }
-                        _el.innerElements.listElements.push(el.nextSibling);
-                        el.nextSibling.remove();
+                        _el.innerElements.listElements.push(localEl.nextSibling);
+                        localEl.nextSibling.remove();
                     }
 
                 }
@@ -444,18 +387,18 @@ var ox = (
                     }
                     
                     let len = _el.innerElements.listElements.length;
-                    let virtualElement = {childNodes:[]};
+                    let _virtualElement = {childNodes:[]};
 
                     for(let i = 0; i < len; i++)
                     {
                         let node = _el.innerElements.listElements.shift();
-                        el.parentElement.insertBefore(node, closeComment);
-                        virtualElement.childNodes.push(node);
+                        localEl.parentElement.insertBefore(node, end);
+                        _virtualElement.childNodes.push(node);
                     }
                     
                     if(!_el.innerElements.isInit)
                     {
-                        helper.scanHTML(virtualElement, function(el) {
+                        helper.scanHTML(end === null ? el : _virtualElement, function(el) {
                             helper.scanBinderMX.call(virtualViewModel, el);
                             throw new Error('BCI');
                         });
