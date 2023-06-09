@@ -227,6 +227,19 @@ var ox = (
                 }
                  el.addEventListener("click", callback);
             }},
+            {binder:'o-event', calc:true, fn:function(el, value){
+                if(typeof value !== 'object'){
+                    throw new Error('o-event value must be an object!');  
+                }
+                if(value['event'] === undefined && typeof value['event'] !== 'string'){
+                    throw new Error('Object has no property "event" and must be a string type!');  
+                }
+                if(value['callback'] === undefined && typeof value['callback'] !== 'function'){
+                    throw new Error('Object has no property "callback" and must be a function!');  
+                }
+                el.addEventListener(value['event'], value['callback']);
+            }
+            },
             {binder:'o-value', calc:false, fn:function(el, value, index = null){
                 if(index !== null){
                     return;
